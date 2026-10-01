@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wattsun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0E2742;
+  --ink-2:#38526E;
+  --gold:#FFB627;
+  --gold-deep:#F08A00;
+  --teal:#0E8A8C;
+  --teal-light:#1FB7B1;
+  --glass:rgba(255,255,255,.58);
+  --edge:rgba(255,255,255,.8);
+  --sky-top:#3C8FE8;
+  --sky-mid:#86C4F2;
+  --sky-low:#DDF0FB;
+  --sun-a:#FFFEF5;
+  --sun-b:#FFE884;
+  --sun-c:#FFB92A;
+  --display:'Unbounded','Segoe UI',system-ui,sans-serif;
+  --body:'Manrope','Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);color:var(--ink);line-height:1.55;font-size:16px;min-height:100vh;background:#86C4F2;overflow-x:hidden}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+.sky{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 55%,var(--sky-low) 100%)}
+
+.glass{
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(22px) saturate(1.4);
+  backdrop-filter:blur(22px) saturate(1.4);
+  border:1px solid var(--edge);
+  box-shadow:0 1px 0 rgba(255,255,255,.9) inset,0 24px 50px -24px rgba(14,39,66,.4);
+}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;height:clamp(640px,90vh,780px);overflow:hidden}
+.top{position:absolute;z-index:4;top:20px;left:max(24px,5vw);right:max(24px,5vw);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.pill{border-radius:999px;padding:10px 18px;font-size:14px;font-weight:600}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:500;font-size:15px;letter-spacing:.06em}
+.brand i{display:block;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#FFF6C8,#FFB627 70%);box-shadow:0 0 12px 3px rgba(255,182,39,.7)}
+
+.arc{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.arc text{font-family:var(--body);font-size:13px;font-weight:600;fill:var(--ink)}
+.sun{position:absolute;left:0;top:0;z-index:1;width:var(--sun,210px);height:var(--sun,210px);border-radius:50%;pointer-events:none;will-change:transform;
+  background:radial-gradient(circle at 42% 38%,var(--sun-a) 0%,var(--sun-b) 45%,var(--sun-c) 100%);
+  box-shadow:0 0 50px 16px rgba(255,190,70,.6),0 0 170px 70px rgba(255,170,60,.28)}
+.sun::before,.sun::after{content:"";position:absolute;border-radius:50%}
+.sun::before{inset:-16%;border:1px solid rgba(255,255,255,.8)}
+.sun::after{inset:-37%;border:1px dashed rgba(255,255,255,.55)}
+
+.intro{position:absolute;z-index:2;left:max(24px,5vw);bottom:128px;width:min(500px,44vw);border-radius:34px;padding:30px 32px 28px}
+.intro h1{font-family:var(--display);font-weight:500;font-size:clamp(1.3rem,2.1vw,1.8rem);line-height:1.22;letter-spacing:-.01em}
+.intro p{margin-top:14px;color:var(--ink-2);max-width:42ch}
+.readout{display:flex;align-items:flex-end;gap:26px;margin-top:22px;padding-top:20px;border-top:1px solid rgba(14,39,66,.14)}
+.readout .clock{font-family:var(--display);font-weight:500;font-size:1.05rem;line-height:1.1;min-width:5.6em}
+.readout .kw{font-family:var(--display);font-weight:600;font-size:clamp(2.2rem,4vw,3.2rem);line-height:1}
+.readout .kw small{font-size:1rem;font-weight:500;margin-left:6px}
+.readout .cap{display:block;color:var(--ink-2);font-size:13px;margin-top:6px}
+
+.scrub{position:absolute;z-index:3;left:50%;bottom:32px;transform:translateX(-50%);width:min(760px,calc(100% - 48px));border-radius:999px;padding:14px 26px;display:flex;align-items:center;gap:16px}
+.scrub label{font-size:14px;font-weight:600;white-space:nowrap}
+.scrub .t{font-size:13px;color:var(--ink-2);white-space:nowrap}
+input[type=range]{-webkit-appearance:none;appearance:none;flex:1;height:26px;background:transparent;cursor:pointer;min-width:0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,rgba(14,39,66,.18),rgba(255,182,39,.9),rgba(14,39,66,.18))}
+input[type=range]::-moz-range-track{height:6px;border-radius:6px;background:linear-gradient(90deg,rgba(14,39,66,.18),rgba(255,182,39,.9),rgba(14,39,66,.18))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;margin-top:-9px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#FFF6C8,#FFB627);border:2px solid #fff;box-shadow:0 2px 10px rgba(14,39,66,.4)}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#FFF6C8,#FFB627);border:2px solid #fff;box-shadow:0 2px 10px rgba(14,39,66,.4)}
+
+/* ---------- Content ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.setup{border-radius:36px;padding:34px 36px 32px;margin-top:-8px}
+h2{font-family:var(--display);font-weight:500;font-size:1.25rem;line-height:1.3}
+h3{font-family:var(--display);font-weight:500;font-size:1rem}
+.setup .lede{color:var(--ink-2);margin-top:6px;max-width:60ch}
+.fields{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:24px}
+.field span{display:block;font-size:14px;font-weight:600;margin-bottom:6px}
+input[type=text],input[type=number],.name{width:100%;padding:13px 16px;border-radius:16px;border:1px solid rgba(14,39,66,.14);background:rgba(255,255,255,.7);font-size:16px}
+.err{min-height:1.4em;margin-top:8px;font-size:14px;font-weight:600;color:#A4261B}
+.appl-head{display:flex;align-items:baseline;justify-content:space-between;margin-top:14px}
+.appl-head span{font-size:14px;color:var(--ink-2)}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.chip{border:1px solid rgba(14,39,66,.16);background:rgba(255,255,255,.6);border-radius:999px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s,transform .15s}
+.chip small{font-weight:500;color:var(--ink-2);margin-left:4px}
+.chip:hover{background:#fff;transform:translateY(-1px)}
+.appl{list-style:none;margin-top:18px}
+.row{display:grid;grid-template-columns:1fr 130px 130px 44px;gap:12px;align-items:center;margin-top:10px}
+.row.head{margin-top:0;font-size:13px;color:var(--ink-2);font-weight:600}
+.num{position:relative;display:block}
+.num input{padding-right:40px}
+.num span{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ink-2);pointer-events:none}
+.x{width:44px;height:44px;border-radius:50%;border:1px solid rgba(14,39,66,.14);background:rgba(255,255,255,.6);font-size:20px;line-height:1;cursor:pointer}
+.x:hover{background:#fff}
+.actions{display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:26px}
+.ghost{border:1.5px solid rgba(14,39,66,.3);background:transparent;border-radius:999px;padding:14px 24px;font-weight:600;cursor:pointer}
+.ghost:hover{background:rgba(255,255,255,.6)}
+.cta{margin-left:auto;border:0;border-radius:999px;padding:17px 34px;font-family:var(--display);font-weight:500;font-size:15px;cursor:pointer;color:var(--ink);
+  background:linear-gradient(100deg,#FFC94D,#FF9A1F);box-shadow:0 12px 30px -10px rgba(240,138,0,.8),0 1px 0 rgba(255,255,255,.7) inset;transition:transform .15s,box-shadow .15s}
+.cta:hover{transform:translateY(-2px)}
+.cta:disabled{opacity:.75;cursor:progress;transform:none}
+
+.results{padding-top:28px;padding-bottom:64px;display:grid;gap:20px;scroll-margin-top:16px}
+.summary{display:grid;grid-template-columns:1.7fr 1fr;gap:20px}
+.big{border-radius:36px;padding:34px 36px}
+.big .label{font-weight:600;color:var(--ink-2)}
+.big-num{font-family:var(--display);font-weight:600;font-size:clamp(3.2rem,8vw,5.6rem);line-height:1.05;margin-top:6px}
+.big-num small{font-size:1.3rem;font-weight:500;margin-left:10px}
+.peak{margin-top:4px;color:var(--ink-2)}
+.facts{display:grid;grid-template-columns:repeat(4,1fr);margin-top:28px;border-top:1px solid rgba(14,39,66,.14)}
+.facts div{padding:18px 16px 0 0}
+.facts div+div{padding-left:18px;border-left:1px solid rgba(14,39,66,.14)}
+.facts dt{font-size:13px;color:var(--ink-2);font-weight:600}
+.facts dd{font-family:var(--display);font-weight:500;font-size:1.15rem;margin-top:4px}
+.health{border-radius:120px 120px 36px 36px;padding:34px 28px 30px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.ring{width:150px;height:150px}
+.health h3{margin-top:14px}
+.health p{color:var(--ink-2);margin-top:6px;font-size:15px;max-width:22ch}
+
+.card{border-radius:36px;padding:30px 34px}
+.card-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px}
+.legend{display:flex;gap:18px;font-size:14px;font-weight:600}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{width:14px;height:14px;border-radius:5px;display:block}
+.chart-wrap{margin-top:14px;touch-action:pan-y;cursor:crosshair}
+.chart-wrap svg{width:100%;height:auto;display:block}
+.chart-wrap text{font-family:var(--body);font-size:var(--cf,12px);fill:var(--ink-2)}
+
+.job{display:grid;grid-template-columns:200px 1fr 270px;gap:24px;align-items:center;padding:18px 0;border-top:1px solid rgba(14,39,66,.13)}
+.job.head{border-top:0;padding:16px 0 4px;font-size:13px;color:var(--ink-2);font-weight:600}
+.axis{display:flex;justify-content:space-between}
+.who strong{display:block;font-size:1.05rem}
+.who span{font-size:14px;color:var(--ink-2)}
+.track{position:relative;height:14px;border-radius:8px;background:rgba(14,39,66,.1)}
+.track::after{content:"";position:absolute;left:50%;top:-4px;bottom:-4px;width:1px;background:rgba(14,39,66,.25)}
+.track i{position:absolute;top:0;bottom:0;border-radius:8px;background:linear-gradient(90deg,var(--teal),var(--teal-light))}
+.when b{display:block;font-weight:700}
+.badge{display:inline-flex;align-items:center;gap:8px;margin-top:6px;font-size:13px;font-weight:600;padding:4px 12px;border-radius:999px;background:rgba(30,158,90,.16);color:#0C6B3A}
+.badge::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.badge.warn{background:rgba(240,138,0,.2);color:#8A4B00}
+.check{margin-top:14px;padding-top:16px;border-top:1px solid rgba(14,39,66,.13);color:var(--ink-2);font-size:15px}
+.empty{padding:22px 0 6px;color:var(--ink-2)}
+.note{border-radius:20px;padding:14px 20px;font-size:14px;color:var(--ink-2);justify-self:start}
+
+@media (max-width:900px){
+  .summary{grid-template-columns:1fr}
+  .facts{grid-template-columns:repeat(2,1fr)}
+  .facts div:nth-child(3){border-left:0;padding-left:0}
+  .job{grid-template-columns:1fr;gap:12px}
+  .job.head{display:none}
+  .hero{height:800px}
+  .intro{top:330px;bottom:auto;left:16px;right:16px;width:auto;padding:24px}
+  .top{left:16px;right:16px}
+}
+@media (max-width:720px){
+  .scrub{width:calc(100% - 32px);padding:12px 18px;gap:10px}
+  .scrub label{display:none}
+  .fields{grid-template-columns:1fr}
+  .row{grid-template-columns:1fr 1fr 44px;row-gap:10px;padding-bottom:12px;border-bottom:1px solid rgba(14,39,66,.1)}
+  .row .name{grid-column:1 / 3;grid-row:1}
+  .row .x{grid-column:3;grid-row:1}
+  .row.head{display:none}
+  .setup,.big,.card{padding:24px 22px;border-radius:30px}
+  .wrap{padding:0 16px}
+  .cta{margin-left:0;width:100%}
+  .ghost{width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *{transition:none!important}
+}
+
+[hidden]{display:none!important}
+.source{display:flex;align-items:center;gap:10px;justify-self:start;color:var(--ink)}
+.source::before{content:"";width:9px;height:9px;border-radius:50%;background:#1E9E5A;flex:none}
+.source.sim::before{background:#E58A00}
+.alerts{margin-top:12px;padding-top:14px;border-top:1px solid rgba(14,39,66,.13);font-size:15px;color:var(--ink-2)}
+.alerts p{display:flex;align-items:center;gap:10px}
+.alerts p+p{margin-top:6px}
+.alerts p::before{content:"";width:9px;height:9px;border-radius:50%;background:#C93A2B;flex:none}
+.alerts p.none::before{background:#1E9E5A}
+.legend i.low{background:rgba(201,58,43,.22);border:1px solid rgba(201,58,43,.5)}
+.when .sub{display:block;font-size:13px;color:var(--ink-2);margin-top:2px}
+.health .why{font-size:13px;margin-top:10px}
+.empty-panel{border-radius:30px;padding:26px 30px;text-align:center;color:var(--ink-2);margin-top:20px}
+.tools{display:flex;justify-content:flex-start}
+@media print{
+  body{background:#fff}
+  .sky,.hero,.setup,.scrub,.tools,#empty{display:none!important}
+  .glass{background:#fff!important;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;border:1px solid #ddd}
+  .wrap{max-width:none;padding:0}
+  .results{padding-top:0}
+}
+</style>
+</head>
+<body>
+<div class="sky" aria-hidden="true"></div>
+
+<main>
+  <section class="hero" id="hero">
+    <div class="top">
+      <div class="glass pill brand"><i></i>WATTSUN</div>
+      <div class="glass pill" id="dateTag">Today</div>
+    </div>
+
+    <svg class="arc" id="arc" aria-hidden="true"></svg>
+    <div class="sun" id="sun" aria-hidden="true"></div>
+
+    <div class="glass intro">
+      <h1>Run the heavy appliances when the sun peaks.</h1>
+      <p>Enter your rooftop and appliances. Wattsun forecasts today's solar output and picks the best time to run each one.</p>
+      <div class="readout" aria-live="polite">
+        <div class="clock" id="clock">11:00 AM</div>
+        <div>
+          <div class="kw"><span id="kwNow">–</span><small>kW</small></div>
+          <span class="cap" id="kwCap">Press Plan my day to see your solar output</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass scrub">
+      <label for="time">Move the sun</label>
+      <span class="t">6 AM</span>
+      <input id="time" type="range" min="6" max="18" step="0.1" value="11" aria-label="Time of day">
+      <span class="t">6 PM</span>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <section class="glass setup" aria-labelledby="setupTitle">
+      <h2 id="setupTitle">Your rooftop and appliances</h2>
+      <p class="lede">Add what you run each day. Wattsun finds the sunniest slot for each appliance.</p>
+
+      <div class="fields">
+        <label class="field"><span>City</span><input id="loc" type="text" value="Lucknow" autocomplete="off" placeholder="e.g. Lucknow"></label>
+        <label class="field"><span>Solar system size (kW)</span><input id="size" type="number" min="0.5" max="100" step="0.5" value="5" inputmode="decimal"></label>
+      </div>
+      <p class="err" id="err" role="alert"></p>
+
+      <div class="appl-head"><h3>Appliances</h3><span>Tap a preset to add it</span></div>
+      <div class="chips" id="chips"></div>
+      <ul class="appl" id="appl"></ul>
+
+      <div class="actions">
+        <button class="ghost" id="add" type="button">Add appliance</button>
+        <button class="cta" id="plan" type="button">Plan my day</button>
+      </div>
+    </section>
+
+    <div id="empty" class="glass empty-panel">Your forecast, appliance schedule and savings will appear here once you plan your day.</div>
+
+    <section class="results" id="results" aria-label="Results" hidden>
+      <p class="glass note source" id="source"></p>
+
+      <div class="summary">
+        <div class="glass big">
+          <p class="label">Solar generated today</p>
+          <p class="big-num"><span id="gen">0</span><small>kWh</small></p>
+          <p class="peak" id="peak"></p>
+          <dl class="facts">
+            <div><dt>You'll use</dt><dd id="use"></dd></div>
+            <div><dt>Left over</dt><dd id="surplus"></dd></div>
+            <div><dt>Saved today</dt><dd id="save"></dd></div>
+            <div><dt>CO₂ avoided</dt><dd id="co2"></dd></div>
+          </dl>
+        </div>
+        <div class="glass health">
+          <svg class="ring" viewBox="0 0 120 120" role="img" id="ringSvg" aria-label="Solar health score">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(14,39,66,.13)" stroke-width="10"/>
+            <circle id="ringArc" cx="60" cy="60" r="52" fill="none" stroke="#1E9E5A" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" transform="rotate(-90 60 60)"/>
+            <text id="ringNum" x="60" y="68" text-anchor="middle" style="font-family:var(--display);font-size:30px;font-weight:600;fill:#0E2742">0</text>
+          </svg>
+          <h3>Solar health</h3>
+          <p id="healthText"></p>
+          <p class="why">Compares today's forecast with about 5 peak-sun-hours for your system size.</p>
+        </div>
+      </div>
+
+      <div class="glass card">
+        <div class="card-head">
+          <h2>Hour by hour</h2>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="chart-wrap" id="chartWrap"></div>
+        <div class="alerts" id="alerts"></div>
+      </div>
+
+      <div class="glass card">
+        <h2>Best time to run each appliance</h2>
+        <div id="schedule"></div>
+      </div>
+
+      <div class="tools"><button class="ghost" id="print" type="button">Print or save report</button></div>
+      <p class="glass note">NASA POWER climatology and live weather data, with automatic fallback if the lookup fails. Savings assume ₹8 per kWh and CO₂ assumes 0.82 kg per kWh.</p>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+'use strict';
+var API_BASE = "http://127.0.0.1:8000";
+var $ = function(s){ return document.querySelector(s); };
+var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var H0 = 5, H1 = 19, SLOTS = (H1 - H0) * 2;
+
+var PRESETS = [
+  {label:'AC', name:'AC', w:1500}, {label:'Washer', name:'Washing Machine', w:800},
+  {label:'Fridge', name:'Refrigerator', w:200}, {label:'Fan', name:'Fan', w:70},
+  {label:'Geyser', name:'Water Heater', w:2000}, {label:'TV', name:'TV', w:120},
+  {label:'Microwave', name:'Microwave', w:1200}, {label:'Water pump', name:'Water Pump', w:750}
+];
+
+var state = {
+  hour: 6, data: null,
+  hourly: new Array(24).fill(0), meta: new Array(24).fill(null),
+  appliances: [{name:'AC', w:1500, h:1.5}, {name:'Washing Machine', w:800, h:1.5}]
+};
+
+/* ---------- helpers ---------- */
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function num(x, d){ return (Number(x) || 0).toFixed(d); }
+function fmt(h){
+  var hh = Math.floor(h + 1e-9), m = Math.round((h - hh) * 60);
+  if (m === 60){ hh += 1; m = 0; }
+  hh = hh % 24;
+  var ap = hh >= 12 ? 'PM' : 'AM', x = hh % 12; if (x === 0) x = 12;
+  return x + ':' + String(m).padStart(2,'0') + ' ' + ap;
+}
+function fmtH(h){ h = h % 24; var ap = h >= 12 ? 'PM' : 'AM', x = h % 12; if (!x) x = 12; return x + ' ' + ap; }
+function hex(c){ return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)]; }
+function mix(a, b, t){
+  var A = hex(a), B = hex(b);
+  return 'rgb(' + A.map(function(v,i){ return Math.round(v + (B[i]-v) * t); }).join(',') + ')';
+}
+function genAt(x){
+  var a = Math.max(0, Math.min(23, Math.floor(x))), b = Math.min(23, a + 1), f = x - a;
+  return state.hourly[a] * (1 - f) + state.hourly[b] * f;
+}
+
+/* ---------- sky ---------- */
+var SKY = [
+  [6,   '#6F7FC6', '#F3B9A4', '#FFE3B4'],
+  [8,   '#5B9DE6', '#A8D4F4', '#FFECC6'],
+  [12,  '#3C8FE8', '#86C4F2', '#DDF0FB'],
+  [15,  '#4A95E4', '#95CCF0', '#FFF1CE'],
+  [17.5,'#6C80D2', '#F2AE92', '#FFD59A'],
+  [18,  '#6F6FBE', '#EE9A86', '#FFC283']
+];
+function paintSky(h){
+  var i = 0;
+  while (i < SKY.length - 2 && h > SKY[i+1][0]) i++;
+  var a = SKY[i], b = SKY[i+1], t = Math.max(0, Math.min(1, (h - a[0]) / (b[0] - a[0])));
+  var r = document.documentElement.style;
+  r.setProperty('--sky-top', mix(a[1], b[1], t));
+  r.setProperty('--sky-mid', mix(a[2], b[2], t));
+  r.setProperty('--sky-low', mix(a[3], b[3], t));
+  var e = Math.pow(Math.sin(Math.PI * Math.max(0, Math.min(1, (h - 6) / 12))), 0.6);
+  r.setProperty('--sun-a', mix('#FFD79A', '#FFFEF5', e));
+  r.setProperty('--sun-b', mix('#FF9F45', '#FFE884', e));
+  r.setProperty('--sun-c', mix('#FF6E22', '#FFB92A', e));
+}
+
+/* ---------- hero geometry ---------- */
+var G = {};
+function layout(){
+  var hero = $('#hero'), W = hero.clientWidth, H = hero.clientHeight, small = W < 900;
+  var size = small ? 120 : 210;
+  var baseY = small ? 300 : H - 170;
+  var padL, padR;
+  if (small){ padL = padR = 40; }
+  else {
+    padL = Math.max(24, W * 0.05) + Math.min(500, W * 0.44) + 70;
+    padR = Math.max(80, W * 0.06);
+  }
+  var arcH = small ? 170 : Math.min(baseY - 140, (W - padL - padR) * 0.55);
+  G = {W:W, H:H, size:size, baseY:baseY, padL:padL, padR:padR, arcH:arcH};
+  $('#sun').style.setProperty('--sun', size + 'px');
+  var pts = [];
+  for (var i = 0; i <= 60; i++){
+    var t = i / 60;
+    pts.push((padL + (W - padL - padR) * (0.5 - 0.5 * Math.cos(Math.PI * t))).toFixed(1) + ',' + (baseY - Math.sin(Math.PI * t) * arcH).toFixed(1));
+  }
+  $('#arc').innerHTML =
+    '<path d="M' + pts.join(' L') + '" fill="none" stroke="rgba(255,255,255,.85)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 9"/>' +
+    '<circle cx="' + padL + '" cy="' + baseY + '" r="5" fill="#fff"/>' +
+    '<circle cx="' + (W - padR) + '" cy="' + baseY + '" r="5" fill="#fff"/>' +
+    (small
+      ? '<text x="' + (padL - 24) + '" y="' + (baseY + 26) + '" text-anchor="start">Sunrise</text>' +
+        '<text x="' + (W - padR + 24) + '" y="' + (baseY + 26) + '" text-anchor="end">Sunset</text>'
+      : '<text x="' + padL + '" y="' + (baseY + 26) + '" text-anchor="middle">Sunrise, about 6 AM</text>' +
+        '<text x="' + (W - padR) + '" y="' + (baseY + 26) + '" text-anchor="middle">Sunset, about 6 PM</text>');
+  placeSun(state.hour);
+}
+function placeSun(h){
+  var t = Math.max(0, Math.min(1, (h - 6) / 12));
+  var x = G.padL + (G.W - G.padL - G.padR) * (0.5 - 0.5 * Math.cos(Math.PI * t));
+  var y = G.baseY - Math.sin(Math.PI * t) * G.arcH;
+  $('#sun').style.transform = 'translate(' + (x - G.size / 2).toFixed(1) + 'px,' + (y - G.size / 2).toFixed(1) + 'px)';
+}
+
+/* ---------- time control ---------- */
+var raf = 0;
+function setHour(h){
+  h = Math.max(6, Math.min(18, h));
+  state.hour = h;
+  paintSky(h);
+  placeSun(h);
+  $('#clock').textContent = fmt(h);
+  if (state.data){
+    $('#kwNow').textContent = genAt(h).toFixed(2);
+    var m = state.meta[Math.round(h)];
+    $('#kwCap').textContent = m ? 'solar output, ' + Math.round(m.cloud) + '% cloud cover, ' + Math.round(m.temp) + '°C' : 'solar output from your roof';
+  }
+  $('#time').value = h;
+  updateMarker();
+}
+function animateTo(target, ms){
+  cancelAnimationFrame(raf);
+  if (reduce){ setHour(target); return; }
+  var from = state.hour, t0 = performance.now();
+  (function step(now){
+    var p = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - p, 3);
+    setHour(from + (target - from) * e);
+    if (p < 1) raf = requestAnimationFrame(step);
+  })(t0);
+}
+
+/* ---------- chart ---------- */
+var CH = {w:800, h:320, l:52, r:16, t:16, b:34, ymax:4, narrow:false};
+function xPos(h){ return CH.l + (h - H0) / (H1 - H0) * (CH.w - CH.l - CH.r); }
+function yPos(v){ return CH.t + (1 - v / CH.ymax) * (CH.h - CH.t - CH.b); }
+function loadSlots(recs){
+  var load = new Array(SLOTS).fill(0);
+  recs.forEach(function(r){
+    var kw = r.watts / 1000;
+    for (var i = 0; i < SLOTS; i++){
+      var t0 = H0 + i / 2, ov = Math.min(t0 + 0.5, r.end_hour) - Math.max(t0, r.best_hour);
+      if (ov > 0) load[i] += kw * Math.min(1, ov / 0.5);
+    }
+  });
+  return load;
+}
+function drawChart(d){
+  CH.narrow = $('#chartWrap').clientWidth < 560;
+  CH.w = CH.narrow ? 520 : 800; CH.h = 320; CH.l = CH.narrow ? 50 : 52;
+  var load = loadSlots(d.recommendations), peakLoad = Math.max.apply(null, load.concat([0]));
+  CH.ymax = Math.max(1, Math.ceil(Math.max(d.peak_kw, peakLoad)));
+  var step = CH.ymax <= 4 ? 1 : (CH.ymax <= 10 ? 2 : 5), yb = yPos(0), out = '';
+  out += '<svg id="chart" style="--cf:' + (CH.narrow ? '15px' : '12px') + '" viewBox="0 0 ' + CH.w + ' ' + CH.h + '" role="img" aria-label="Hourly solar output compared with appliance load">';
+  out += '<defs><linearGradient id="gfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFC94D" stop-opacity=".85"/><stop offset="1" stop-color="#FFC94D" stop-opacity=".12"/></linearGradient></defs>';
+  (d.alerts || []).forEach(function(a){
+    var x0 = xPos(Math.max(H0, a.start_hour)), x1 = xPos(Math.min(H1, a.end_hour));
+    if (x1 > x0) out += '<rect x="' + x0 + '" y="' + CH.t + '" width="' + (x1 - x0) + '" height="' + (yb - CH.t) + '" fill="rgba(201,58,43,.13)" stroke="rgba(201,58,43,.4)" stroke-dasharray="3 4"/>';
+  });
+  for (var v = 0; v <= CH.ymax; v += step){
+    out += '<line x1="' + CH.l + '" x2="' + (CH.w - CH.r) + '" y1="' + yPos(v) + '" y2="' + yPos(v) + '" stroke="rgba(14,39,66,.13)"/>';
+    out += '<text x="' + (CH.l - 10) + '" y="' + (yPos(v) + 4) + '" text-anchor="end">' + v + ' kW</text>';
+  }
+  [6,9,12,15,18].forEach(function(h){
+    out += '<text x="' + xPos(h) + '" y="' + (CH.h - 8) + '" text-anchor="middle">' + fmtH(h) + '</text>';
+  });
+  var line = '';
+  for (var h = H0; h <= H1; h++) line += (h === H0 ? 'M' : ' L') + xPos(h).toFixed(1) + ',' + yPos(genAt(h)).toFixed(1);
+  out += '<path d="' + line + ' L' + xPos(H1) + ',' + yb + ' L' + xPos(H0) + ',' + yb + ' Z" fill="url(#gfill)"/>';
+  out += '<path d="' + line + '" fill="none" stroke="#E58A00" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>';
+  if (peakLoad > 0){
+    var p = 'M' + xPos(H0) + ',' + yb;
+    for (var i = 0; i < SLOTS; i++){
+      var a0 = xPos(H0 + i / 2), a1 = xPos(H0 + (i + 1) / 2), y = yPos(load[i]);
+      p += ' L' + a0.toFixed(1) + ',' + y.toFixed(1) + ' L' + a1.toFixed(1) + ',' + y.toFixed(1);
+    }
+    p += ' L' + xPos(H1) + ',' + yb + ' Z';
+    out += '<path d="' + p + '" fill="rgba(14,138,140,.5)" stroke="#0E8A8C" stroke-width="2" stroke-linejoin="round"/>';
+  }
+  out += '<line id="mLine" y1="' + CH.t + '" y2="' + yb + '" stroke="#0E2742" stroke-width="1.5" stroke-dasharray="4 4"/>';
+  out += '<circle id="mDot" r="7" fill="#fff" stroke="#E58A00" stroke-width="3"/>';
+  out += '</svg>';
+  $('#chartWrap').innerHTML = out;
+  updateMarker();
+}
+function updateMarker(){
+  var l = $('#mLine'), dot = $('#mDot');
+  if (!l || !dot) return;
+  var x = xPos(state.hour);
+  l.setAttribute('x1', x); l.setAttribute('x2', x);
+  dot.setAttribute('cx', x); dot.setAttribute('cy', yPos(genAt(state.hour)));
+}
+(function bindChart(){
+  var w = $('#chartWrap');
+  function move(e){
+    if (e.pointerType !== 'mouse' && e.buttons === 0 && e.type !== 'pointerdown') return;
+    var svg = $('#chart'); if (!svg) return;
+    var b = svg.getBoundingClientRect(), vx = (e.clientX - b.left) / b.width * CH.w;
+    cancelAnimationFrame(raf);
+    setHour(H0 + (vx - CH.l) / (CH.w - CH.l - CH.r) * (H1 - H0));
+  }
+  w.addEventListener('pointermove', move);
+  w.addEventListener('pointerdown', move);
+})();
+
+/* ---------- render backend response ---------- */
+function render(d){
+  state.data = d;
+  state.hourly = new Array(24).fill(0);
+  state.meta = new Array(24).fill(null);
+  var peakH = 12, peakV = -1;
+  d.hourly.forEach(function(h){
+    var i = Math.max(0, Math.min(23, h.hour));
+    state.hourly[i] = h.predicted_kw;
+    state.meta[i] = {cloud: h.cloud_cover, temp: h.temperature};
+    if (h.predicted_kw > peakV){ peakV = h.predicted_kw; peakH = i; }
+  });
+
+  var live = d.data_source === 'live', src = $('#source');
+  src.className = 'glass note source' + (live ? '' : ' sim');
+  src.textContent = live
+    ? 'Live NASA POWER and weather data, average radiation ' + num(d.monthly_avg_ghi, 2) + ' kWh/m²/day'
+    : 'Using simulated data because the live lookup failed. Check the city spelling or your internet connection.';
+
+  $('#gen').textContent = num(d.total_predicted_kwh, 2);
+  $('#peak').textContent = 'Peaks at ' + num(d.peak_kw, 2) + ' kW around ' + fmtH(peakH);
+  $('#use').textContent = num(d.expected_consumption_kwh, 2) + ' kWh';
+  $('#surplus').textContent = num(d.surplus_kwh, 2) + ' kWh';
+  $('#save').textContent = '₹' + num(d.estimated_savings, 2);
+  $('#co2').textContent = num(d.co2_reduction_kg, 2) + ' kg';
+
+  var when = new Date(d.date + 'T00:00:00');
+  $('#dateTag').textContent = when.toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'short'}) + ', ' + d.location;
+
+  var score = Math.max(0, Math.min(100, Math.round(d.solar_health_score))), C = 326.7, arc = $('#ringArc');
+  arc.setAttribute('stroke-dashoffset', (C * (1 - score / 100)).toFixed(1));
+  arc.setAttribute('stroke', score >= 70 ? '#1E9E5A' : (score >= 40 ? '#E58A00' : '#C93A2B'));
+  $('#ringNum').textContent = score;
+  $('#ringSvg').setAttribute('aria-label', 'Solar health score ' + score + ' out of 100');
+  $('#healthText').textContent = score >= 70 ? 'Strong day for solar.' : (score >= 40 ? 'Moderate generation today.' : 'Weak generation today.');
+
+  var hasAlerts = d.alerts && d.alerts.length;
+  $('#legend').innerHTML =
+    '<span><i style="background:linear-gradient(180deg,#FFC94D,#F08A00)"></i>Solar output</span>' +
+    '<span><i style="background:var(--teal)"></i>Your appliances</span>' +
+    (hasAlerts ? '<span><i class="low"></i>Low output</span>' : '');
+  drawChart(d);
+
+  $('#alerts').innerHTML = hasAlerts
+    ? d.alerts.map(function(a){ return '<p>Low generation expected from ' + fmtH(a.start_hour) + ' to ' + fmtH(a.end_hour) + '.</p>'; }).join('')
+    : '<p class="none">No low-generation windows expected today.</p>';
+
+  var html = '<div class="job head" aria-hidden="true"><span>Appliance</span><span class="axis"><span>5 AM</span><span>12 PM</span><span>7 PM</span></span><span>Run it</span></div>';
+  d.recommendations.forEach(function(r){
+    var left = Math.max(0, (r.best_hour - H0) / (H1 - H0) * 100);
+    var width = Math.max(2, Math.min(100 - left, (r.end_hour - r.best_hour) / (H1 - H0) * 100));
+    html += '<div class="job">' +
+      '<div class="who"><strong>' + esc(r.appliance) + '</strong><span>' + esc(r.watts) + ' W for ' + esc(r.hours_per_day) + ' h</span></div>' +
+      '<div class="track" aria-hidden="true"><i style="left:' + left.toFixed(2) + '%;width:' + width.toFixed(2) + '%"></i></div>' +
+      '<div class="when"><b>' + fmt(r.best_hour) + ' to ' + fmt(r.end_hour) + '</b>' +
+      '<span class="sub">' + num(r.predicted_kw_at_hour, 2) + ' kW from the roof at ' + fmt(r.best_hour) + '</span>' +
+      (r.shared_hour_note ? '<span class="sub">' + esc(r.shared_hour_note) + '</span>' : '') +
+      '<span class="badge' + (r.fully_solar_covered ? '' : ' warn') + '">' + (r.fully_solar_covered ? 'Fully covered by solar' : 'Partial coverage, some power from the grid') + '</span></div>' +
+      '</div>';
+  });
+  $('#schedule').innerHTML = html;
+
+  $('#empty').hidden = true;
+  $('#results').hidden = false;
+  setHour(state.hour);
+  animateTo(peakH, 1200);
+  setTimeout(function(){ $('#results').scrollIntoView({behavior: reduce ? 'auto' : 'smooth', block:'start'}); }, 150);
+}
+
+/* ---------- inputs ---------- */
+function renderChips(){
+  $('#chips').innerHTML = PRESETS.map(function(p, i){
+    return '<button type="button" class="chip" data-p="' + i + '">' + esc(p.label) + '<small>' + p.w + ' W</small></button>';
+  }).join('');
+}
+function renderRows(){
+  $('#appl').innerHTML =
+    '<li class="row head" aria-hidden="true"><span>Name</span><span>Power</span><span>Hours a day</span><span></span></li>' +
+    state.appliances.map(function(a, i){
+      return '<li class="row" data-i="' + i + '">' +
+        '<input class="name" data-k="name" aria-label="Appliance name" placeholder="Appliance" value="' + esc(a.name) + '">' +
+        '<label class="num"><input data-k="w" type="number" min="0" step="10" inputmode="numeric" aria-label="Power in watts" value="' + (a.w || '') + '"><span>W</span></label>' +
+        '<label class="num"><input data-k="h" type="number" min="0.5" max="24" step="0.5" inputmode="decimal" aria-label="Hours a day" value="' + (a.h || '') + '"><span>h</span></label>' +
+        '<button type="button" class="x" data-remove aria-label="Remove ' + esc(a.name || 'appliance') + '">×</button></li>';
+    }).join('');
+}
+$('#appl').addEventListener('input', function(e){
+  var t = e.target, row = t.closest('.row');
+  if (!row || !t.dataset.k) return;
+  state.appliances[+row.dataset.i][t.dataset.k] = t.dataset.k === 'name' ? t.value : (parseFloat(t.value) || 0);
+});
+$('#appl').addEventListener('click', function(e){
+  var b = e.target.closest('[data-remove]');
+  if (!b) return;
+  state.appliances.splice(+b.closest('.row').dataset.i, 1);
+  renderRows();
+});
+$('#chips').addEventListener('click', function(e){
+  var b = e.target.closest('.chip');
+  if (!b) return;
+  var p = PRESETS[+b.dataset.p];
+  state.appliances.push({name:p.name, w:p.w, h:1.5});
+  renderRows();
+});
+$('#add').addEventListener('click', function(){
+  state.appliances.push({name:'', w:0, h:1.5});
+  renderRows();
+  var n = document.querySelectorAll('#appl .name');
+  if (n.length) n[n.length - 1].focus();
+});
+$('#time').addEventListener('input', function(e){
+  cancelAnimationFrame(raf);
+  setHour(parseFloat(e.target.value));
+});
+$('#print').addEventListener('click', function(){ window.print(); });
+
+$('#plan').addEventListener('click', async function(){
+  var loc = $('#loc').value.trim(), size = parseFloat($('#size').value), err = $('#err'), btn = $('#plan');
+  err.textContent = '';
+  if (!loc){ err.textContent = "Enter a city so we can look up today's sky."; $('#loc').focus(); return; }
+  if (!(size > 0)){ err.textContent = 'Enter a system size above 0 kW, for example 5.'; $('#size').focus(); return; }
+  var appliances = state.appliances
+    .filter(function(a){ return a.name && a.name.trim() && a.w > 0; })
+    .map(function(a){ return {name:a.name.trim(), watts:a.w, hours_per_day:(a.h > 0 ? a.h : 1.5)}; });
+  if (!appliances.length){ err.textContent = 'Add at least one appliance with a name and a power above 0 W.'; return; }
+
+  btn.disabled = true; btn.textContent = "Reading today's sky";
+  try {
+    var res = await fetch(API_BASE + '/api/predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({location: loc, system_size_kw: size, appliances: appliances})
+    });
+    if (!res.ok){
+      var body = await res.text();
+      throw new Error('The server returned an error (' + res.status + '). ' + body.slice(0, 200));
+    }
+    render(await res.json());
+  } catch (e){
+    err.textContent = (e instanceof TypeError)
+      ? "Can't reach the backend at " + API_BASE + ". Start it from the backend folder with: python -m uvicorn main:app --reload --port 8000"
+      : e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Plan my day';
+  }
+});
+
+var rz;
+window.addEventListener('resize', function(){
+  clearTimeout(rz);
+  rz = setTimeout(function(){
+    layout();
+    if (state.data && ($('#chartWrap').clientWidth < 560) !== CH.narrow) drawChart(state.data);
+  }, 80);
+});
+
+/* ---------- start ---------- */
+$('#dateTag').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long', day:'numeric', month:'short'}) + ', ' + $('#loc').value;
+renderChips();
+renderRows();
+layout();
+setHour(6);
+requestAnimationFrame(function(){ animateTo(11, 2400); });
+})();
+</script>
+</body>
+</html>

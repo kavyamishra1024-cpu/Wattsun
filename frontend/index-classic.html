@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WATTSUN — Solar Forecast</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f4ef;
+    --sky-top:#e8f0ea;
+    --sun:#f2a93b;
+    --sun-deep:#e8863a;
+    --green:#2f6b4f;
+    --green-deep:#1f4d38;
+    --ink:#22322a;
+    --slate:#6b7d73;
+    --white:#ffffff;
+    --line:rgba(34,50,42,0.10);
+    --good:#2f6b4f;
+    --warn:#c9502f;
+    --glass:rgba(255,255,255,0.85);
+  }
+  *{ box-sizing:border-box; }
+  html{ height:100%; margin:0; }
+  body{
+    margin:0;
+    min-height:100vh;
+    color:var(--ink);
+    font-family:'Manrope', sans-serif;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -5%, #fdf6e8 0%, transparent 55%),
+      linear-gradient(180deg, var(--sky-top) 0%, var(--bg) 40%, var(--bg) 100%);
+    background-attachment:fixed;
+    background-size:cover;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  /* drifting cloud layer */
+  .cloud{
+    position:fixed;
+    opacity:0.55;
+    filter:blur(0.5px);
+    z-index:0;
+    pointer-events:none;
+  }
+  .cloud svg{ width:100%; height:100%; display:block; }
+  .cloud.c1{ top:8%; left:-10%; width:260px; animation:drift1 90s linear infinite; }
+  .cloud.c2{ top:20%; right:-15%; width:200px; animation:drift2 70s linear infinite; }
+  .cloud.c3{ top:2%; left:40%; width:180px; opacity:0.4; animation:drift1 110s linear infinite; }
+  @keyframes drift1{ from{ transform:translateX(0);} to{ transform:translateX(120vw);} }
+  @keyframes drift2{ from{ transform:translateX(0);} to{ transform:translateX(-120vw);} }
+  @media (prefers-reduced-motion: reduce){ .cloud{ animation:none; } }
+
+  .layout{
+    position:relative;
+    z-index:1;
+    max-width:1100px;
+    margin:0 auto;
+    padding:0 20px 70px;
+    display:grid;
+    grid-template-columns:260px 1fr;
+    gap:28px;
+  }
+  @media (max-width:880px){
+    .layout{ grid-template-columns:1fr; }
+  }
+
+  /* ---------- HERO (spans full width) ---------- */
+  .hero{
+    grid-column:1 / -1;
+    text-align:center;
+    padding:44px 0 10px;
+    position:relative;
+  }
+  .brand-row{
+    display:inline-flex; align-items:center; gap:10px;
+    position:relative; z-index:1;
+  }
+  .brand-row svg{ width:34px; height:34px; }
+  .hero h1{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:2.3rem;
+    margin:0;
+    letter-spacing:0.02em;
+    color:var(--green-deep);
+  }
+  .hero .tagline{
+    position:relative; z-index:1;
+    font-size:0.72rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--sun-deep);
+    font-weight:700;
+    margin:4px 0 10px;
+  }
+  .hero p{
+    position:relative; z-index:1;
+    color:var(--slate);
+    font-size:0.96rem;
+    max-width:42ch;
+    margin:0 auto;
+  }
+
+  /* ---------- SIDEBAR: appliance presets ---------- */
+  .sidebar{
+    background:var(--glass);
+    backdrop-filter:blur(14px);
+    border-radius:22px;
+    padding:24px 20px;
+    height:fit-content;
+    box-shadow:0 20px 50px -28px rgba(22,50,79,0.25);
+    border:1px solid rgba(255,255,255,0.6);
+  }
+  .sidebar h3{
+    font-family:'Fraunces', serif;
+    font-size:1.02rem;
+    margin:0 0 4px;
+  }
+  .sidebar .sub{ color:var(--slate); font-size:0.8rem; margin-bottom:16px; }
+  .preset-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  @media (max-width:880px){ .preset-grid{ grid-template-columns:repeat(4,1fr); } }
+  @media (max-width:520px){ .preset-grid{ grid-template-columns:repeat(3,1fr); } }
+  .preset{
+    background:var(--white);
+    border:1.5px solid var(--line);
+    border-radius:14px;
+    padding:14px 8px;
+    text-align:center;
+    cursor:pointer;
+    transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  }
+  .preset:hover{
+    border-color:var(--sun);
+    transform:translateY(-2px);
+    box-shadow:0 10px 20px -12px rgba(255,122,61,0.4);
+  }
+  .preset svg{ width:26px; height:26px; color:var(--sun-deep); margin-bottom:6px; }
+  .preset .name{ font-size:0.74rem; font-weight:700; display:block; }
+  .preset .watts{ font-size:0.68rem; color:var(--slate); }
+
+  .sidebar-note{
+    margin-top:18px;
+    font-size:0.76rem;
+    color:var(--slate);
+    line-height:1.6;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+
+  /* ---------- MAIN COLUMN ---------- */
+  .main{ min-width:0; }
+
+  .panel{
+    background:var(--glass);
+    backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.6);
+    border-radius:22px;
+    padding:32px;
+    box-shadow:0 20px 50px -28px rgba(22,50,79,0.25);
+  }
+  label{
+    display:block;
+    font-size:0.82rem;
+    color:var(--slate);
+    margin-bottom:6px;
+    margin-top:20px;
+    font-weight:700;
+  }
+  label:first-of-type{ margin-top:0; }
+  input{
+    width:100%;
+    padding:12px 14px;
+    background:rgba(234,246,251,0.7);
+    border:1.5px solid transparent;
+    color:var(--ink);
+    border-radius:12px;
+    font-size:0.98rem;
+    font-family:'Manrope', sans-serif;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  input:focus{
+    outline:none;
+    border-color:var(--sun);
+    background:var(--white);
+  }
+  .appliance-row{ display:flex; gap:8px; margin-top:10px; align-items:center; }
+  .appliance-row input{ flex:1; min-width:0; }
+  .appliance-row input.app-watts{ max-width:90px; flex:0 0 90px; }
+  .appliance-row input.app-hours{ max-width:64px; flex:0 0 64px; }
+  .appliance-row button{
+    background:none; border:none; color:var(--warn);
+    font-size:1.1rem; cursor:pointer; padding:6px;
+    line-height:1;
+  }
+  #addApplianceBtn{
+    margin-top:14px;
+    background:none;
+    border:1.5px dashed var(--line);
+    color:var(--ink);
+    padding:10px 16px;
+    border-radius:12px;
+    cursor:pointer;
+    font-family:'Manrope';
+    font-weight:700;
+    font-size:0.88rem;
+    width:100%;
+  }
+  #addApplianceBtn:hover{ border-color:var(--sun); }
+
+  #predictBtn{
+    margin-top:26px;
+    width:100%;
+    padding:17px;
+    border:none;
+    border-radius:14px;
+    background:linear-gradient(135deg, var(--sun), var(--green));
+    color:var(--white);
+    font-family:'Manrope';
+    font-weight:800;
+    font-size:1.04rem;
+    cursor:pointer;
+    box-shadow:0 14px 28px -10px rgba(47,107,79,0.4);
+    transition:transform .12s ease;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .spinner{
+    width:16px; height:16px;
+    border:2.5px solid rgba(255,255,255,0.4);
+    border-top-color:#fff;
+    border-radius:50%;
+    animation:spin-btn 0.7s linear infinite;
+    display:none;
+  }
+  #predictBtn.loading .spinner{ display:inline-block; }
+  @keyframes spin-btn{ to{ transform:rotate(360deg); } }
+
+  .empty-state{
+    text-align:center;
+    padding:40px 20px;
+    color:var(--slate);
+  }
+  .empty-state svg{ width:48px; height:48px; color:var(--sun); margin-bottom:14px; opacity:0.7; }
+  .empty-state p{ font-size:0.92rem; max-width:32ch; margin:0 auto; }
+
+  .flash{ animation:flash-bg 0.5s ease; }
+  @keyframes flash-bg{ 0%{ background:rgba(47,107,79,0.18); } 100%{ background:transparent; } }
+
+  #results.visible{ animation:fade-slide-up 0.45s ease; }
+  @keyframes fade-slide-up{ from{ opacity:0; transform:translateY(14px); } to{ opacity:1; transform:translateY(0); } }
+
+  #printBtn{
+    margin-top:14px;
+    width:100%;
+    padding:12px;
+    border:1.5px solid var(--line);
+    border-radius:12px;
+    background:var(--white);
+    color:var(--green-deep);
+    font-family:'Manrope';
+    font-weight:700;
+    font-size:0.86rem;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  #printBtn:hover{ border-color:var(--green); }
+  #printBtn svg{ width:16px; height:16px; }
+
+  @media print{
+    .sidebar, #predictBtn, #printBtn, .cloud, #addApplianceBtn, .appliance-row button{ display:none !important; }
+    body{ background:white; }
+    .panel, .section, .stat-strip{ box-shadow:none; border:1px solid #ddd; }
+  }
+  #predictBtn:hover{ transform:translateY(-1px); }
+  #predictBtn:disabled{ opacity:0.6; cursor:not-allowed; transform:none; }
+
+  #error{
+    display:none;
+    margin-top:14px;
+    color:var(--warn);
+    font-size:0.9rem;
+    background:rgba(224,102,63,0.08);
+    padding:10px 14px;
+    border-radius:10px;
+  }
+
+  /* ---------- RESULTS ---------- */
+  #results{ display:none; margin-top:24px; }
+
+  .source-tag{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:0.78rem; font-weight:700;
+    padding:7px 16px; border-radius:20px;
+    margin-bottom:18px;
+  }
+  .source-tag.live{ background:rgba(47,158,110,0.14); color:var(--good); }
+  .source-tag.sim{ background:rgba(224,102,63,0.14); color:var(--warn); }
+  .source-tag .dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+  .stat-strip{
+    background:var(--glass);
+    backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.6);
+    border-radius:20px;
+    display:flex;
+    box-shadow:0 20px 50px -28px rgba(22,50,79,0.25);
+    overflow:hidden;
+  }
+  .stat{
+    flex:1; text-align:center;
+    padding:22px 10px;
+    border-right:1px solid var(--line);
+  }
+  .stat:last-child{ border-right:none; }
+  .stat svg{ width:20px; height:20px; color:var(--sun-deep); margin-bottom:8px; }
+  .stat .label{ font-size:0.7rem; color:var(--slate); margin-bottom:6px; }
+  .stat .value{
+    font-family:'Fraunces', serif;
+    font-weight:700;
+    font-size:1.35rem;
+    color:var(--ink);
+  }
+  .stat-strip.secondary{
+    margin-top:12px;
+    background:rgba(47,107,79,0.06);
+    box-shadow:none;
+    border:1px solid var(--line);
+  }
+  .stat-strip.secondary .stat .value{ font-size:1.1rem; color:var(--green-deep); }
+  .info-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:14px; height:14px; border-radius:50%;
+    background:var(--line); color:var(--slate);
+    font-size:0.62rem; font-weight:800; font-style:normal;
+    margin-left:4px; cursor:help; vertical-align:middle;
+  }
+
+  .section{
+    background:var(--glass);
+    backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,0.6);
+    border-radius:20px;
+    padding:28px 30px;
+    margin-top:18px;
+    box-shadow:0 20px 50px -28px rgba(22,50,79,0.25);
+  }
+  .section h3{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:1.12rem;
+    margin:0 0 16px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .section h3 svg{ width:18px; height:18px; color:var(--sun-deep); }
+  canvas{ width:100%; height:190px; display:block; }
+
+  .rec-item, .alert-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 0;
+    border-top:1px solid var(--line);
+    font-size:0.94rem;
+  }
+  .rec-item:first-child, .alert-item:first-child{ border-top:none; }
+  .rec-item .rec-main{ display:flex; flex-direction:column; gap:2px; }
+  .rec-item .rec-time{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    color:var(--green-deep);
+    font-size:0.98rem;
+  }
+  .rec-item .rec-detail{ font-size:0.8rem; color:var(--slate); }
+  .badge{ font-size:0.75rem; padding:4px 10px; border-radius:20px; font-weight:700; white-space:nowrap; display:inline-flex; align-items:center; gap:4px; }
+  .badge.ok{ background:rgba(47,107,79,0.14); color:var(--green-deep); }
+  .badge.warn{ background:rgba(201,80,47,0.12); color:var(--warn); }
+
+  footer.note{
+    text-align:center;
+    color:var(--slate);
+    font-size:0.78rem;
+    margin-top:24px;
+    line-height:1.6;
+    grid-column:1/-1;
+  }
+</style>
+</head>
+<body>
+
+<div class="cloud c1"><svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg"><ellipse cx="60" cy="55" rx="55" ry="28" fill="#ffffff"/><ellipse cx="110" cy="40" rx="45" ry="32" fill="#ffffff"/><ellipse cx="150" cy="58" rx="40" ry="24" fill="#ffffff"/></svg></div>
+<div class="cloud c2"><svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg"><ellipse cx="60" cy="55" rx="55" ry="26" fill="#ffffff"/><ellipse cx="115" cy="42" rx="42" ry="28" fill="#ffffff"/></svg></div>
+<div class="cloud c3"><svg viewBox="0 0 200 90" xmlns="http://www.w3.org/2000/svg"><ellipse cx="60" cy="55" rx="50" ry="24" fill="#ffffff"/><ellipse cx="105" cy="45" rx="38" ry="26" fill="#ffffff"/></svg></div>
+
+<div class="layout">
+
+  <div class="hero">
+    <div class="brand-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#f2a93b" stroke-width="1.8"><circle cx="12" cy="12" r="4.5" fill="#fdeecb"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8" stroke-linecap="round"/></svg>
+      <h1>WATTSUN</h1>
+    </div>
+    <div class="tagline">AI Solar Energy Optimization</div>
+    <p>Enter your setup, get today's solar forecast and appliance schedule.</p>
+  </div>
+
+  <aside class="sidebar">
+    <h3>Quick add</h3>
+    <div class="sub">Tap to drop an appliance into your list</div>
+    <div class="preset-grid" id="presetGrid">
+      <div class="preset" data-name="AC" data-watts="1500">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="8" rx="2"/><path d="M6 18v1M10 18v1M14 18v1M18 18v1"/></svg>
+        <span class="name">AC</span><span class="watts">1500W</span>
+      </div>
+      <div class="preset" data-name="Washing Machine" data-watts="800">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="13" r="5"/><circle cx="7" cy="6" r="0.6" fill="currentColor"/></svg>
+        <span class="name">Washer</span><span class="watts">800W</span>
+      </div>
+      <div class="preset" data-name="Refrigerator" data-watts="200">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="5" y1="10" x2="19" y2="10"/></svg>
+        <span class="name">Fridge</span><span class="watts">200W</span>
+      </div>
+      <div class="preset" data-name="Fan" data-watts="70">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-3 2-6 5-6s2 4-1 5M12 10c-3 0-6 2-6 5s4 2 5-1M14 12c3 0 6 2 6 5s-4 2-5-1M10 14c0 3-2 6-5 6s-2-4 1-5"/></svg>
+        <span class="name">Fan</span><span class="watts">70W</span>
+      </div>
+      <div class="preset" data-name="Water Heater" data-watts="2000">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4M8 5l1.5 3M16 5l-1.5 3"/><rect x="6" y="8" width="12" height="13" rx="3"/></svg>
+        <span class="name">Geyser</span><span class="watts">2000W</span>
+      </div>
+      <div class="preset" data-name="TV" data-watts="120">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="9" y1="21" x2="15" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span class="name">TV</span><span class="watts">120W</span>
+      </div>
+      <div class="preset" data-name="Microwave" data-watts="1200">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><rect x="4" y="7" width="11" height="10" rx="1"/><circle cx="19" cy="10" r="1" fill="currentColor"/><circle cx="19" cy="14" r="1" fill="currentColor"/></svg>
+        <span class="name">Microwave</span><span class="watts">1200W</span>
+      </div>
+      <div class="preset" data-name="Water Pump" data-watts="750">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9 12a3 3 0 0 1 6 0c0 2-3 3-3 5"/><circle cx="12" cy="19" r="0.6" fill="currentColor"/></svg>
+        <span class="name">Water Pump</span><span class="watts">750W</span>
+      </div>
+    </div>
+    <div class="sidebar-note">Every preset adds straight to your appliance list on the right — edit the wattage there anytime.</div>
+  </aside>
+
+  <div class="main">
+    <div class="panel">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div>
+          <label>Location</label>
+          <input id="location" placeholder="e.g. Lucknow" value="Lucknow">
+        </div>
+        <div>
+          <label>Solar system size (kW)</label>
+          <input id="systemSize" type="number" step="0.5" value="5">
+        </div>
+      </div>
+
+      <label>Appliances <span style="font-weight:400; color:var(--slate); font-size:0.75rem;">(name · watts · hrs/day)</span></label>
+      <div id="appliances">
+        <div class="appliance-row">
+          <input class="app-name" value="AC">
+          <input class="app-watts" type="number" value="1500" placeholder="watts">
+          <input class="app-hours" type="number" value="1.5" step="0.5" placeholder="hrs">
+          <button onclick="this.parentElement.remove()">✕</button>
+        </div>
+        <div class="appliance-row">
+          <input class="app-name" value="Washing Machine">
+          <input class="app-watts" type="number" value="800" placeholder="watts">
+          <input class="app-hours" type="number" value="1.5" step="0.5" placeholder="hrs">
+          <button onclick="this.parentElement.remove()">✕</button>
+        </div>
+      </div>
+      <button id="addApplianceBtn" onclick="addApplianceRow()">+ Add appliance</button>
+      <button id="predictBtn" onclick="runPrediction()"><span class="spinner"></span><span class="btn-label">Predict today's solar & schedule</span></button>
+      <div id="error"></div>
+    </div>
+
+    <div id="emptyState" class="panel empty-state" style="margin-top:20px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
+      <p>Your forecast, appliance schedule, and savings will appear here once you hit predict.</p>
+    </div>
+
+    <div id="results">
+      <div id="sourceTag" class="source-tag"></div>
+      <div class="stat-strip">
+        <div class="stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="4"/></svg>
+          <div class="label">Today's generation</div><div class="value" id="statTotal">–</div>
+        </div>
+        <div class="stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>
+          <div class="label">Expected consumption</div><div class="value" id="statConsumption">–</div>
+        </div>
+        <div class="stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M9 8h4a2 2 0 1 1 0 4H9M9 12h4M9 16h6"/></svg>
+          <div class="label">Est. savings</div><div class="value" id="statSavings">–</div>
+        </div>
+        <div class="stat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22c-5-2-8-6-8-11a8 8 0 0 1 16 0c0 5-3 9-8 11z"/><path d="M9 12c1 2 3 3 3 3s2-1 3-3c1-2 0-4-1-5-1 1-2 1-2 3-1-2-2-2-2-3-1 1-2 3-1 5z"/></svg>
+          <div class="label">CO₂ reduction</div><div class="value" id="statCO2">–</div>
+        </div>
+      </div>
+
+      <div class="stat-strip secondary">
+        <div class="stat">
+          <div class="label">Peak output</div><div class="value" id="statPeak">–</div>
+        </div>
+        <div class="stat">
+          <div class="label">Surplus / exportable<span class="info-icon" title="Solar generated today that isn't used by any scheduled appliance — could be exported to the grid or stored in a battery.">i</span></div><div class="value" id="statSurplus">–</div>
+        </div>
+        <div class="stat">
+          <div class="label">Solar health score<span class="info-icon" title="Compares today's predicted generation to a theoretical maximum of ~5 peak-sun-hours for your system size. 100 means the system is performing at its estimated best for today's conditions.">i</span></div><div class="value" id="statHealth">–</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>Hourly generation forecast</h3>
+        <canvas id="chart" width="800" height="190"></canvas>
+      </div>
+
+      <div class="section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 20h8M12 18v2"/></svg>Appliance schedule</h3>
+        <div id="recList"></div>
+      </div>
+
+      <div class="section">
+        <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 15H4l8-15z"/><path d="M12 10v4M12 17h.01"/></svg>Alerts</h3>
+        <div id="alertList"></div>
+      </div>
+
+      <button id="printBtn" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / save report
+      </button>
+    </div>
+  </div>
+
+  <footer class="note">NASA POWER climatology + live weather data, with automatic fallback if the lookup fails.</footer>
+</div>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+
+document.getElementById('presetGrid').addEventListener('click', (e) => {
+  const card = e.target.closest('.preset');
+  if(!card) return;
+  const div = document.createElement('div');
+  div.className = 'appliance-row flash';
+  div.innerHTML = `
+    <input class="app-name" value="${card.dataset.name}">
+    <input class="app-watts" type="number" value="${card.dataset.watts}" placeholder="watts">
+    <input class="app-hours" type="number" value="1.5" step="0.5" placeholder="hrs">
+    <button onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('appliances').appendChild(div);
+  div.scrollIntoView({behavior:'smooth', block:'nearest'});
+  setTimeout(() => div.classList.remove('flash'), 500);
+});
+
+function addApplianceRow(){
+  const div = document.createElement('div');
+  div.className = 'appliance-row';
+  div.innerHTML = `
+    <input class="app-name" placeholder="name">
+    <input class="app-watts" type="number" placeholder="watts">
+    <input class="app-hours" type="number" value="1.5" step="0.5" placeholder="hrs">
+    <button onclick="this.parentElement.remove()">✕</button>`;
+  document.getElementById('appliances').appendChild(div);
+}
+
+async function runPrediction(){
+  const btn = document.getElementById('predictBtn');
+  const errEl = document.getElementById('error');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.btn-label').textContent = 'Predicting...';
+
+  try{
+    const location = document.getElementById('location').value.trim();
+    const systemSize = parseFloat(document.getElementById('systemSize').value);
+    const names = [...document.querySelectorAll('.app-name')].map(i => i.value.trim());
+    const watts = [...document.querySelectorAll('.app-watts')].map(i => parseFloat(i.value));
+    const hoursList = [...document.querySelectorAll('.app-hours')].map(i => parseFloat(i.value) || 1.5);
+    const appliances = names.map((n,i) => ({name:n, watts:watts[i], hours_per_day: hoursList[i]}))
+                             .filter(a => a.name && a.watts > 0);
+
+    if(!location) throw new Error("Enter a location.");
+    if(!systemSize || systemSize <= 0) throw new Error("Enter a valid system size.");
+    if(appliances.length === 0) throw new Error("Add at least one appliance.");
+
+    const res = await fetch(`${API_BASE}/api/predict`, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({location, system_size_kw: systemSize, appliances})
+    });
+
+    if(!res.ok){
+      const body = await res.text();
+      throw new Error(`Server error (${res.status}): ${body}`);
+    }
+
+    const data = await res.json();
+    document.getElementById('emptyState').style.display = 'none';
+    renderResults(data);
+  } catch(err){
+    errEl.textContent = `${err.message} Is the backend running at ${API_BASE}?`;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.btn-label').textContent = "Predict today's solar & schedule";
+  }
+}
+
+function animateNumber(el, target, suffix, decimals, prefix){
+  prefix = prefix || '';
+  const start = 0;
+  const duration = 700;
+  const startTime = performance.now();
+  function tick(now){
+    const progress = Math.min(1, (now - startTime) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const value = start + (target - start) * eased;
+    el.textContent = prefix + value.toFixed(decimals) + suffix;
+    if(progress < 1) requestAnimationFrame(tick);
+    else el.textContent = prefix + target.toFixed(decimals) + suffix;
+  }
+  requestAnimationFrame(tick);
+}
+
+function renderResults(data){
+  const resultsEl = document.getElementById('results');
+  resultsEl.style.display = 'block';
+  resultsEl.classList.remove('visible');
+  void resultsEl.offsetWidth; // restart animation
+  resultsEl.classList.add('visible');
+
+  const tag = document.getElementById('sourceTag');
+  const isLive = data.data_source === 'live';
+  tag.className = 'source-tag ' + (isLive ? 'live' : 'sim');
+  tag.innerHTML = isLive
+    ? `<span class="dot"></span> Live NASA POWER + weather data · avg radiation ${data.monthly_avg_ghi} kWh/m²/day`
+    : `<span class="dot"></span> Using simulated data (live lookup failed — check location or internet)`;
+
+  animateNumber(document.getElementById('statTotal'), data.total_predicted_kwh, ' kWh', 2);
+  animateNumber(document.getElementById('statConsumption'), data.expected_consumption_kwh, ' kWh', 2);
+  animateNumber(document.getElementById('statSavings'), data.estimated_savings, '', 2, '₹');
+  animateNumber(document.getElementById('statCO2'), data.co2_reduction_kg, ' kg', 2);
+  animateNumber(document.getElementById('statPeak'), data.peak_kw, ' kW', 2);
+  animateNumber(document.getElementById('statSurplus'), data.surplus_kwh, ' kWh', 2);
+  animateNumber(document.getElementById('statHealth'), data.solar_health_score, '/100', 0);
+
+  drawChart(data.hourly, data.recommendations);
+
+  const recList = document.getElementById('recList');
+  recList.innerHTML = '';
+  data.recommendations.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'rec-item';
+    const badge = r.fully_solar_covered
+      ? '<span class="badge ok">✓ High solar availability</span>'
+      : '<span class="badge warn">Partial coverage</span>';
+    const note = r.shared_hour_note ? `<span class="rec-detail">${r.shared_hour_note}</span>` : '';
+    div.innerHTML = `<div class="rec-main">
+        <span class="rec-time">${r.appliance} → ${formatHour(r.best_hour)}–${formatHour(r.end_hour)}</span>
+        <span class="rec-detail">${r.watts}W · ${r.predicted_kw_at_hour} kW available</span>
+        ${note}
+      </div>${badge}`;
+    recList.appendChild(div);
+  });
+
+  const alertList = document.getElementById('alertList');
+  alertList.innerHTML = '';
+  if(data.alerts.length === 0){
+    alertList.innerHTML = '<div class="alert-item">No low-generation windows expected today.</div>';
+  } else {
+    data.alerts.forEach(a => {
+      const div = document.createElement('div');
+      div.className = 'alert-item';
+      div.innerHTML = `<span>Low generation expected</span><span class="badge warn">${formatHour(a.start_hour)}–${formatHour(a.end_hour)}</span>`;
+      alertList.appendChild(div);
+    });
+  }
+
+  setTimeout(() => {
+    resultsEl.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
+}
+
+function formatHour(h){
+  const totalMinutes = Math.round(h * 60);
+  let hour24 = Math.floor(totalMinutes / 60) % 24;
+  const minutes = totalMinutes % 60;
+  const period = hour24 < 12 ? 'AM' : 'PM';
+  const display = hour24 % 12 === 0 ? 12 : hour24 % 12;
+  const mm = minutes === 0 ? '' : ':' + String(minutes).padStart(2, '0');
+  return `${display}${mm} ${period}`;
+}
+
+function drawChart(hourly, recommendations){
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const max = Math.max(...hourly.map(d => d.predicted_kw), 0.1);
+  const axisLabelWidth = 34;
+  const padding = 24;
+  const leftEdge = padding + axisLabelWidth;
+  const chartW = w - leftEdge - padding;
+  const chartH = h - padding - 24; // leave room for legend at top
+  const topY = 30;
+  const xForHour = (hour) => leftEdge + (hour / (hourly.length - 1)) * chartW;
+  const yForKw = (kw) => topY + chartH - (kw / max) * chartH;
+
+  // y-axis gridlines + kW labels
+  ctx.strokeStyle = 'rgba(34,50,42,0.08)';
+  ctx.fillStyle = '#6b7d73';
+  ctx.font = '10px Manrope, sans-serif';
+  ctx.textAlign = 'right';
+  const ticks = 4;
+  for(let i = 0; i <= ticks; i++){
+    const kwVal = (max / ticks) * i;
+    const y = yForKw(kwVal);
+    ctx.beginPath();
+    ctx.moveTo(leftEdge, y);
+    ctx.lineTo(w - padding, y);
+    ctx.stroke();
+    ctx.fillText(kwVal.toFixed(1), leftEdge - 8, y + 3);
+  }
+  ctx.textAlign = 'left';
+
+  // baseline
+  ctx.strokeStyle = 'rgba(34,50,42,0.2)';
+  ctx.beginPath();
+  ctx.moveTo(leftEdge, topY + chartH);
+  ctx.lineTo(w - padding, topY + chartH);
+  ctx.stroke();
+
+  // appliance load bars -- solid, strongly contrasting blue against the orange line
+  if(recommendations && recommendations.length){
+    ctx.fillStyle = '#3b5bab';
+    recommendations.forEach(r => {
+      const barW = Math.max(8, xForHour(r.end_hour) - xForHour(r.best_hour));
+      const x = xForHour(r.best_hour);
+      const barH = (r.watts / 1000 / max) * chartH;
+      ctx.fillRect(x, topY + chartH - barH, barW, barH);
+    });
+  }
+
+  const grad = ctx.createLinearGradient(0,topY,0,topY + chartH);
+  grad.addColorStop(0, 'rgba(232,134,58,0.32)');
+  grad.addColorStop(1, 'rgba(232,134,58,0.0)');
+
+  ctx.beginPath();
+  hourly.forEach((d,i) => {
+    const x = xForHour(i);
+    const y = yForKw(d.predicted_kw);
+    if(i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.lineTo(w - padding, topY + chartH);
+  ctx.lineTo(leftEdge, topY + chartH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  hourly.forEach((d,i) => {
+    const x = xForHour(i);
+    const y = yForKw(d.predicted_kw);
+    if(i === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#e8863a';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // legend
+  ctx.font = '11px Manrope, sans-serif';
+  ctx.fillStyle = '#e8863a';
+  ctx.fillRect(leftEdge, 6, 10, 10);
+  ctx.fillStyle = '#22322a';
+  ctx.fillText('Solar generation (kW)', leftEdge + 16, 15);
+  ctx.fillStyle = '#3b5bab';
+  ctx.fillRect(leftEdge + 170, 6, 10, 10);
+  ctx.fillStyle = '#22322a';
+  ctx.fillText('Appliance load (kW)', leftEdge + 186, 15);
+
+  ctx.fillStyle = '#6b7d73';
+  ctx.fillText('12AM', leftEdge, h - 4);
+  ctx.fillText('12PM', leftEdge + chartW/2 - 14, h - 4);
+  ctx.fillText('11PM', w - padding - 30, h - 4);
+}
+</script>
+</body>
+</html>
